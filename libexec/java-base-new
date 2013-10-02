@@ -1,0 +1,66 @@
+#!/bin/sh
+# Usage: base new [package-name]
+# Summary: creates a base project in [package-name]
+# Help: base new com.twitter.my_awesome_project
+set -e
+
+package_name=$1
+
+package_folders=$(echo $1 | sed -e 's/\./\//g')
+
+project_name=$(basename $package_folders)
+
+dest_path=$project_name/src/main/java/$package_folders
+test_path=$project_name/src/test/java/$package_folders
+
+group_id=$(echo $package_name | sed -e "s/\.[a-zA-Z0-9_-]*$//g")
+
+year=$(date +%Y)
+
+# check if dest exist
+if [ -e $project_name ]; then
+ echo "$project_name already exists, aborting"
+ exit
+fi
+
+echo "creating project: $project_name"
+mkdir -p $dest_path
+mkdir -p $test_path
+
+echo "  creating App.java"
+cp $_JAVA_BASE_ROOT/share/App.java $dest_path/
+echo "  creating AppTest.java"
+cp $_JAVA_BASE_ROOT/share/AppTest.java $test_path/
+echo "  creating pom.xml"
+cp $_JAVA_BASE_ROOT/share/pom.xml $project_name/
+echo "  creating .gitignore"
+cp $_JAVA_BASE_ROOT/share/.gitignore $project_name/
+echo "  creating .travis.yml"
+cp $_JAVA_BASE_ROOT/share/.travis.yml $project_name/
+echo "  creating LICENSE"
+cp $_JAVA_BASE_ROOT/share/LICENSE $project_name/
+echo "  creating README.markdown"
+cp $_JAVA_BASE_ROOT/share/README.markdown $project_name/
+
+# edit App.scala
+sed -ie "s/###PACKAGE_NAME###/$package_name/g" $dest_path/App.java
+
+# edit AppSpec.scala
+sed -ie "s/###PACKAGE_NAME###/$package_name/g" $test_path/AppTest.java
+
+# edit pom.xml
+sed -ie "s/###PACKAGE_NAME###/$package_name/g" $project_name/pom.xml
+sed -ie "s/###YEAR###/$year/g" $project_name/pom.xml
+sed -ie "s/###GROUP_ID###/$group_id/g" $project_name/pom.xml
+sed -ie "s/###PROJECT_NAME###/$project_name/g" $project_name/pom.xml
+
+# edit readme.markdown
+sed -ie "s/###PROJECT_NAME###/$project_name/g" $project_name/README.markdown
+
+# delete backup files
+rm -rf $project_name/pom.xmle
+rm -rf $dest_path/App.javae
+rm -rf $test_path/AppTest.javae
+rm -rf $project_name/README.markdowne
+
+echo "Done! run mvn exec:java to run your project"
